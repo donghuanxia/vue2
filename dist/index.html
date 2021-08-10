@@ -1,0 +1,36 @@
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Document</title>
+ </head>
+ <body>
+     <div id="app">{{message}}</div>
+     <script src="./vue.js"></script>
+     <script>
+         //vue默认支持响应式数据变化（双向绑定）
+         //1、双向绑定页面得需要能修改（表单，radio,checkbox,input ,textarea）数据变化可以影响视图显示
+         //2、响应式数据变化，能监控到数据变化，并且更新视图（单向的）
+         //vue 模式并不是mvvm,vue默认只是做视图的，渐进式 + 组件化 + vue-router + vuex + vue-cli
+         //数据变化是如何变化的，Object.defineProperty,将对象中原有的属性更改成带有get和set的一个属性，这样当修改的时候，会触发 set ->更新视图
+
+         let vm = new Vue({
+             el:'#app',
+            //  data:{//可以是对象也可以是函数
+            //      message:'hello world'
+            //  }
+            data(){
+                console.log('----',this)
+                return{
+                    message:'hello world',
+                    a:{
+                        b:1
+                    }
+                }
+            }
+         })
+     </script>
+ </body>
+ </html>
