@@ -21,13 +21,17 @@
             //  data:{//可以是对象也可以是函数
             //      message:'hello world'
             //  }
+            //数组修改索引不会导致视图更新，修改length也不会更新
+            //vue3中为了兼容proxy 内部对数组用的就是defineProperty
+            //正常用户修改数组，无非采用的数组变异方法，push pop splice shift unshift reverse sort
             data(){
                 console.log('----',this)
                 return{
                     message:'hello world',
                     a:{
                         b:1
-                    }
+                    },
+                    arr:[1,2,3,4]
                 }
             }
          })

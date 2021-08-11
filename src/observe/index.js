@@ -1,8 +1,19 @@
-import { isObject } from "../utils";
+import { isArray, isObject } from "../utils";
+import { arrayMethods } from "./array";
+
+//原型链指向问题
+//1.每个对象都有一个__proto__属性， 它指向所属类的原型  fn.__proto__ = Function.prototype
+//2.每个原型上都有一个constructor属性，指向函数本身， Function.prototype.constructor = Function
 
 class Observer{
     constructor(value){
-        this.walk(value)//核心就是循环对象
+        if(isArray(value)){
+            //更改数组原型方法
+           value.__proto__ = arrayMethods//只重写vue里的七个方法
+        }else{
+            this.walk(value)//核心就是循环对象
+        }
+        
     }
     walk(data){
         Object.keys(data).forEach(key=>{//要使用defineProperty重新定义

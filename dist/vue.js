@@ -5,15 +5,40 @@
 }(this, (function () { 'use strict';
 
     function isFunction(val) {
+      //判断是否为方法
       return typeof val == 'function';
     }
     function isObject(val) {
+      //判断是否为对象
       return typeof val == 'object' && val !== null;
     }
+    let isArray = Array.isArray; //判断是否为数组
+
+    let oldArrayPortotype = Array.prototype; //获取数组老的原型方法
+
+    let arrayMethods = Object.create(oldArrayPortotype); //让arrayMethods 通过__proto__能获取到数组的方法
+    // arrayMethods.__proto__ == oldArrayPortotype
+    // arrayMethods.push = function
+
+    let methods = [//只有这七个方法可以导致数组发生变化
+    'push', 'shift', 'pop', 'unshift', 'reverse', 'sort', 'splice'];
+    methods.forEach(method => {
+      arrayMethods[method] = function () {
+        console.log(method, '数组的方法进行重新操作');
+      };
+    });
+
+    //1.每个对象都有一个__proto__属性， 它指向所属类的原型  fn.__proto__ = Function.prototype
+    //2.每个原型上都有一个constructor属性，指向函数本身， Function.prototype.constructor = Function
 
     class Observer {
       constructor(value) {
-        this.walk(value); //核心就是循环对象
+        if (isArray(value)) {
+          //更改数组原型方法
+          value.__proto__ = arrayMethods; //只重写vue里的七个方法
+        } else {
+          this.walk(value); //核心就是循环对象
+        }
       }
 
       walk(data) {
@@ -68,17 +93,38 @@
       }
     }
 
+    function proxy(vm, key, source) {
+      //取值的时候做代理，不是暴力的把_data属性赋予给vm,而且直接赋值会有命名冲突的问题
+      Object.defineProperty(vm, key, {
+        get() {
+          return vm[source][key];
+        },
+
+        set(newValue) {
+          vm[source][key] = newValue;
+        }
+
+      });
+    }
+
     function initData(vm) {
       let data = vm.$options.data; //用户传入的数据
       //如果用户传递的是一个函数，则取函数的返回值作为对象，如果就是对象那就直接使用这个对象
       //只有根实例可以data一个对象
 
-      data = isFunction(data) ? data.call(vm) : data; //判断data 是函数还是对象
+      data = vm._data = isFunction(data) ? data.call(vm) : data; //判断data 是函数还是对象,_data已经是响应式的了
       //需要将data变成响应式的， Object.defineProperty,重写data的所有属性
 
       observe(data); //取观测数据，重要，核心模块
+      //console.log('222',data)
+      //data.arr.push(100)
+      //data.arr.pop(100)
 
-      console.log('222', data);
+      for (let key in data) {
+        //vm.message=>vm._data.message
+        proxy(vm, key, '_data');
+      } //vm.message = vm._data.message
+
     }
 
     function initMixin(Vue) {
