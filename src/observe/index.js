@@ -7,13 +7,25 @@ import { arrayMethods } from "./array";
 
 class Observer{
     constructor(value){
+        //不让__ob__被遍历
+        value.__ob__ = this
+        Object.defineProperty(value,'__ob__',{
+            value:this,
+            enumerable:false//表示这个属性不能被列举出来，也就是不能被枚举
+        })
         if(isArray(value)){
             //更改数组原型方法
            value.__proto__ = arrayMethods//只重写vue里的七个方法
+           this.observeArray(value)
         }else{
             this.walk(value)//核心就是循环对象
         }
         
+    }
+    observeArray(data){//递归遍历数组，对数组内部的额对象再次重写[[]]
+        data.forEach(item=>observe(item))//数组里面如果是引用类型的那么是响应式的
+        //vm.arr[0].a = 100//会触发
+        //vm.arr[0]=100 不会触发，更改索引不会触发
     }
     walk(data){
         Object.keys(data).forEach(key=>{//要使用defineProperty重新定义
@@ -36,6 +48,8 @@ function defineReactive(obj,key,value){//vue2慢的原因 主要在这个方法�
         set(newValue){
             if(value === newValue) return 
             value = newValue
+            console.log('秀嘎')
+            observe(newValue)
         }
     })
 }
@@ -44,6 +58,9 @@ export function observe(value){
     //1、如果value不是对象，就不需要观测了，说明写的有问题
     if(!isObject(value)){
         return
+    }
+    if(value.__ob__){
+        return//一个对象不需要被重新观测
     }
     //需要对对象进行观测，最外层必须是一个{}，不能是数组
     //如果一个数据已经被观测过了，就不要在观测了，用类来实现，我观测过就增加一个标识，说明观测过了，在观测时候可以先检测是否观测过

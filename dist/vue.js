@@ -23,8 +23,30 @@
     let methods = [//只有这七个方法可以导致数组发生变化
     'push', 'shift', 'pop', 'unshift', 'reverse', 'sort', 'splice'];
     methods.forEach(method => {
-      arrayMethods[method] = function () {
+      arrayMethods[method] = function (...args) {
+        //数组新增的属性是不是对象，是对象，继续劫持
+        //调用数组的原生逻辑
+        oldArrayPortotype[method].call(this, ...args); //又有自己的逻辑，又有原来的逻辑，函数切片
+
         console.log(method, '数组的方法进行重新操作');
+        let inserted = null;
+        let ob = this.__ob__;
+
+        switch (method) {
+          case 'splice':
+            //删除，修改，添加，arr.splice(),第三个参数起为新添加的
+            inserted = args.splice(2); //splice方法从第三个参数开始都是新添加的
+
+            break;
+
+          case 'push':
+          case 'unshift':
+            inserted = args; //调用push 和unshift 传递的参数就是新增的逻辑
+
+            break;
+        }
+
+        if (inserted) ob.observeArray(inserted);
       };
     });
 
@@ -33,12 +55,29 @@
 
     class Observer {
       constructor(value) {
+        //不让__ob__被遍历
+        value.__ob__ = this;
+        Object.defineProperty(value, '__ob__', {
+          value: this,
+          enumerable: false //表示这个属性不能被列举出来，也就是不能被枚举
+
+        });
+
         if (isArray(value)) {
           //更改数组原型方法
           value.__proto__ = arrayMethods; //只重写vue里的七个方法
+
+          this.observeArray(value);
         } else {
           this.walk(value); //核心就是循环对象
         }
+      }
+
+      observeArray(data) {
+        //递归遍历数组，对数组内部的额对象再次重写[[]]
+        data.forEach(item => observe(item)); //数组里面如果是引用类型的那么是响应式的
+        //vm.arr[0].a = 100//会触发
+        //vm.arr[0]=100 不会触发，更改索引不会触发
       }
 
       walk(data) {
@@ -67,6 +106,8 @@
         set(newValue) {
           if (value === newValue) return;
           value = newValue;
+          console.log('秀嘎');
+          observe(newValue);
         }
 
       });
@@ -76,6 +117,10 @@
       //1、如果value不是对象，就不需要观测了，说明写的有问题
       if (!isObject(value)) {
         return;
+      }
+
+      if (value.__ob__) {
+        return; //一个对象不需要被重新观测
       } //需要对对象进行观测，最外层必须是一个{}，不能是数组
       //如果一个数据已经被观测过了，就不要在观测了，用类来实现，我观测过就增加一个标识，说明观测过了，在观测时候可以先检测是否观测过
       //如果观测过了就跳过
@@ -153,7 +198,9 @@
     //2.会将用户的选项放到vm.$options上
     //3.会对当前属性上搜索有没有data数据 initState
     //4.有data 判断data是不是一个函数，如果是函数，取值返回initData
-    //5.observe 去观测data中的数据
+    //5.observe 去观测data中的数据 和vm没有关系，说明datayijign 变成了响应式的
+    //6.vm上像取值也能取到data中的数据vm._data = data 这样用户能取到data 了 vm._data
+    //7.用户觉得有点麻烦 vm.xx => vm._data.xx
 
     return Vue;
 
