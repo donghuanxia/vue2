@@ -10,6 +10,13 @@ export function initMixin(Vue){
         initState(vm)
         if(vm.$options.el){
             //要将数据挂载到页面上
+            //现在数据已经被劫持了，数据变换需更新视图 diff 算法更新需要更新的部分
+            //vue -> template（写起来更符合直觉） -> jsx（灵活）
+            //vue3-> template写起来性能会更高一些，内部做了很多优化
+            //template -> ast语法树（用来描述语法的，描述语法本身的）->描述成一个树结构 -> 将代码重组成js语法
+            // 模板编译原理（把template模板编译成render函数->虚拟DOM ->diff算法比对虚拟DOM)
+            //ast ->render返回->vnode —》 生成真实DOM
+            // 更新的时候再次调用render-》新的vnode ->新旧比对，--》更新真是的dom
             console.log('页面进行挂载了')
         }
     }
