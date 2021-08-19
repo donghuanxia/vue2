@@ -1,3 +1,4 @@
+import { compileToFunction } from "./compiler"
 import { initState } from "./state"
 
 export function initMixin(Vue){
@@ -17,7 +18,23 @@ export function initMixin(Vue){
             // 模板编译原理（把template模板编译成render函数->虚拟DOM ->diff算法比对虚拟DOM)
             //ast ->render返回->vnode —》 生成真实DOM
             // 更新的时候再次调用render-》新的vnode ->新旧比对，--》更新真是的dom
+            vm.$mount(vm.$options.el)
             console.log('页面进行挂载了')
         }
-    }
+    },
+    Vue.prototype.$mount = function(el){
+        const vm = this
+        const opts = vm.$options
+        el = document.querySelector(el)
+        vm.$el = el
+        if(!opts.render){
+            //模板编译
+            let template = opts.template
+            if(!template){
+                template = el.outerHTML
+            }
+            let render = compileToFunction(template)
+            opts.render = render
+        }
+    }   
 }

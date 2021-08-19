@@ -4,6 +4,15 @@
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 }(this, (function () { 'use strict';
 
+    function parserHTML(template) {
+      console.log(template);
+    }
+
+    function compileToFunction(template) {
+      //将模板生成ast语法树
+      parserHTML(template);
+    }
+
     function isFunction(val) {
       //判断是否为方法
       return typeof val == 'function';
@@ -184,7 +193,32 @@
 
         if (vm.$options.el) {
           //要将数据挂载到页面上
+          //现在数据已经被劫持了，数据变换需更新视图 diff 算法更新需要更新的部分
+          //vue -> template（写起来更符合直觉） -> jsx（灵活）
+          //vue3-> template写起来性能会更高一些，内部做了很多优化
+          //template -> ast语法树（用来描述语法的，描述语法本身的）->描述成一个树结构 -> 将代码重组成js语法
+          // 模板编译原理（把template模板编译成render函数->虚拟DOM ->diff算法比对虚拟DOM)
+          //ast ->render返回->vnode —》 生成真实DOM
+          // 更新的时候再次调用render-》新的vnode ->新旧比对，--》更新真是的dom
+          vm.$mount(vm.$options.el);
           console.log('页面进行挂载了');
+        }
+      }, Vue.prototype.$mount = function (el) {
+        const vm = this;
+        const opts = vm.$options;
+        el = document.querySelector(el);
+        vm.$el = el;
+
+        if (!opts.render) {
+          //模板编译
+          let template = opts.template;
+
+          if (!template) {
+            template = el.outerHTML;
+          }
+
+          let render = compileToFunction(template);
+          opts.render = render;
         }
       };
     }
@@ -201,6 +235,10 @@
     //5.observe 去观测data中的数据 和vm没有关系，说明datayijign 变成了响应式的
     //6.vm上像取值也能取到data中的数据vm._data = data 这样用户能取到data 了 vm._data
     //7.用户觉得有点麻烦 vm.xx => vm._data.xx
+    //8.如果更新对象不存在的属性，会导致视图不更新，如果是数组更新索引和长度不会触发更新
+    //9.如果替换成一个新对象，新对象会被进行劫持，如果是数组存新内容 push unshift() 新增的内容也会被劫持
+    //通过__ob__进行标识这个对象被监控过， 在(vue 中被监控的对象身上都有一个__ob__这个属性)
+    //10.如果你就想改变索引 可以使用$set方法， 内部就是splice()
 
     return Vue;
 
