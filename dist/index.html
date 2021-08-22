@@ -7,7 +7,7 @@
      <title>Document</title>
  </head>
  <body>
-     <div id=app>{{message}}</div>
+     <div id = app>{{message}}<p><span>aaaaaaaaaa</span></p></div>
      <script src="./vue.js"></script>
      <script>
          //vue默认支持响应式数据变化（双向绑定）
@@ -25,7 +25,7 @@
             //vue3中为了兼容proxy 内部对数组用的就是defineProperty
             //正常用户修改数组，无非采用的数组变异方法，push pop splice shift unshift reverse sort
             data(){
-                console.log('----',this)
+                //console.log('----',this)
                 return{
                     message:'hello world',
                     a:{
@@ -36,7 +36,7 @@
                 }
                 
             },
-            render(){}
+            //render(){}
             // template:'<div id=app></div>'
          })
          //vm.arr1[0].name = 'hcc'//走对象的逻辑

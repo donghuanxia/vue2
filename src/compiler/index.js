@@ -6,56 +6,77 @@ const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s
 const startTagClose = /^\s*(\/?)>/;//匹配标签结束符 >
 const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g ;//{{xxxx}}
 let htm1 = 'id=app'
-console.log('aaa=xxxx'.match(attribute))
+//console.log('id=app'.match(attribute))// [1]属性的key, [3] || [4] || [5]属性的值
 
 
 
 function parserHTML(html){
     console.log(html)
-    //可以不停的截取模板，直到把模板全部解析完
+    //
+    function start(tagName,attrs){
+        console.log('start',tagName,attrs)
+    }
+    function end(tagName){
+        console.log('end',tagName)
+    }
+    function text(chars){
+        console.log('chars',chars)
+    }
     function advance(len){//将解析完的删除
         html = html.substring(len)
     }
     function parseStargTag(){
         const start = html.match(startTagOpen)
-        const match = {
-            tagName:start[1],
-            attrs:[]
+        if(start){
+            const match = {
+                tagName:start[1],
+                attrs:[]
+            }
+            advance(start[0].length)
+            console.log(match,html)
+    
+            let end;
+            let attr;
+            while (!(end = html.match(startTagClose)) && (attr = html.match(attribute))) {
+                match.attrs.push({
+                    name:attr[1],
+                    value:attr[3] || attr[4] || attr[5]
+                })// <div id="app"
+                advance(attr[0].length)
+            }
+            if(end){
+                advance(end[0].length)
+            }
+            return match
         }
-        advance(start[0].length)
-        console.log(match,html)
-
-        let end;
-        let attr;
-        while (!(end = html.match(startTagClose)) && (attr = html.match(attribute))) {
-            match.attrs.push({
-                name:attr[1],
-                value:attr[3] || attr[4] || attr[5]
-            })
-            advance(attr[0].length)
-        }
-        if(end){
-            advance(end.length)
-        }
-        return match
+        return false
+        
     }
     while(html){
         //解析标签和文本,看内容的第一个字符是不是<,如果第一个是<就是标签，如果第一个不是<,那就是文本
         let index = html.indexOf('<')
-        debugger
-        if(index==0){
+        //console.log('index-----',index)
+        if(index == 0){
             //解析开始标签，并且把属性也解析出来
             const startTagMatch = parseStargTag()
-            console.log(startTagMatch)
-            if(startTagMatch){
-                //start(startTagMatch.tagName,startTagMatch.attrs)
-                debugger
-                continue
+            //console.log(startTagMatch)
+            if(startTagMatch){//开始标签
+                start(startTagMatch.tagName,startTagMatch.attrs)
+                continue;
             }
-            if(html.match(endTag)){
-                continue
+            let endTagMatch;
+            if(endTagMatch = html.match(endTag)){//结束标签
+                end(endTagMatch[1])
+                advance(endTagMatch[0].length)
+                continue;
             }
-            break
+            break;
+        }
+        //文本
+        if(index > 0 ){
+            let chars = html.substring(0,index)
+            text(chars)
+            advance(chars.length)
         }
 
         
