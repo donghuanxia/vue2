@@ -275,7 +275,7 @@
         const vm = this;
         const opts = vm.$options;
         el = document.querySelector(el);
-        vm.$el = el;
+        vm.$el = el; //页面真实的数据
 
         if (!opts.render) {
           //模板编译

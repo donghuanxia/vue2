@@ -7,7 +7,7 @@
      <title>Document</title>
  </head>
  <body>
-     <div id="app">{{message}}</div>
+     <div id=app>{{message}}</div>
      <script src="./vue.js"></script>
      <script>
          //vue默认支持响应式数据变化（双向绑定）
@@ -36,7 +36,8 @@
                 }
                 
             },
-            template:'<div id= "app" ></div>'
+            render(){}
+            // template:'<div id=app></div>'
          })
          //vm.arr1[0].name = 'hcc'//走对象的逻辑
          //vm.arr1[1] = 100//不会更新，不能通过索引和更改数组的长度更新视图，那七个方法可以
