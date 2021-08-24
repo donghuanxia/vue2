@@ -4,6 +4,82 @@
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 }(this, (function () { 'use strict';
 
+    const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // {{   xxx  }}  
+
+    function genProps(attrs) {
+      // {key:value,key:value,}
+      let str = '';
+
+      for (let i = 0; i < attrs.length; i++) {
+        let attr = attrs[i];
+
+        if (attr.name === 'style') {
+          // {name:id,value:'app'}
+          let styles = {};
+          attr.value.replace(/([^;:]+):([^;:]+)/g, function () {
+            styles[arguments[1]] = arguments[2];
+          });
+          attr.value = styles;
+        }
+
+        str += `${attr.name}:${JSON.stringify(attr.value)},`;
+      }
+
+      return `{${str.slice(0, -1)}}`;
+    }
+
+    function gen(el) {
+      if (el.type == 1) {
+        return generate(el); // 如果是元素就递归的生成
+      } else {
+        let text = el.text; // {{}}
+
+        if (!defaultTagRE.test(text)) return `_v('${text}')`; // 说明就是普通文本
+        // 说明有表达式 我需要 做一个表达式和普通值的拼接 ['aaaa',_s(name),'bbb'].join('+)
+        // _v('aaaa'+_s(name) + 'bbb')
+
+        let lastIndex = defaultTagRE.lastIndex = 0;
+        let tokens = []; // <div> aaa{{bbb}} aaa </div>
+
+        let match; // ，每次匹配的时候 lastIndex 会自动向后移动
+
+        while (match = defaultTagRE.exec(text)) {
+          // 如果正则 + g 配合exec 就会有一个问题 lastIndex的问题
+          let index = match.index;
+
+          if (index > lastIndex) {
+            tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+          }
+
+          tokens.push(`_s(${match[1].trim()})`);
+          lastIndex = index + match[0].length;
+        }
+
+        if (lastIndex < text.length) {
+          tokens.push(JSON.stringify(text.slice(lastIndex)));
+        }
+
+        return `_v(${tokens.join('+')})`; // webpack 源码 css-loader  图片处理
+      }
+    }
+
+    function genChildren(el) {
+      let children = el.children;
+
+      if (children) {
+        return children.map(item => gen(item)).join(',');
+      }
+
+      return false;
+    } // _c(div,{},c1,c2,c3,c4)
+
+
+    function generate(ast) {
+      let children = genChildren(ast);
+      let code = `_c('${ast.tag}',${ast.attrs.length ? genProps(ast.attrs) : 'undefined'}${children ? `,${children}` : ''})`;
+      return code;
+    }
+
     const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`; //匹配标签名 aa-xxx
 
     const qnameCapture = `((?:${ncname}\\:)?${ncname})`; //aa:aa-xxx
@@ -17,17 +93,59 @@
     const startTagClose = /^\s*(\/?)>/; //匹配标签结束符 >
 
     function parserHTML(html) {
-      console.log(html); //
+      //console.log(html)
+      let stack = [];
+      let root = null; //我要构建父子关系
+
+      function createASTElement(tag, attrs, parent = null) {
+        return {
+          tag,
+          type: 1,
+          //元素
+          children: [],
+          parent,
+          attrs
+        };
+      }
 
       function start(tagName, attrs) {
-        console.log('start', tagName, attrs);
+        //遇到开始标签 就取栈中的最后一个作为父节点
+        let parent = stack[stack.length - 1];
+        let element = createASTElement(tagName, attrs, parent);
+
+        if (root == null) {
+          //说明当前节点就是根节点
+          root = element;
+        }
+
+        if (parent) {
+          element.parent = parent; //更新p的parent属性 指向parent
+
+          parent.children.push(element);
+        }
+
+        stack.push(element); //console.log('start',tagName,attrs)
       }
 
       function end(tagName) {
-        console.log('end', tagName);
+        let endTag = stack.pop(tagName);
+
+        if (endTag.tag != tagName) {
+          console.log('标签出错');
+        }
       }
 
       function text(chars) {
+        let parent = stack[stack.length - 1];
+        chars = chars.replace(/\s/g, ""); //空格
+
+        if (chars) {
+          parent.children.push({
+            type: 2,
+            text: chars
+          });
+        }
+
         console.log('chars', chars);
       }
 
@@ -101,11 +219,21 @@
           advance(chars.length);
         }
       }
+
+      return root;
     }
 
     function compileToFunction(template) {
-      //将模板生成ast语法树
-      parserHTML(template);
+      //1.将模板生成ast语法树
+      let ast = parserHTML(template); //代码优化，标记静态节点
+      //2.代码生成
+
+      let code = generate(ast);
+      let render = new Function(`with(this){return ${code}}`);
+      console.log(render.toString()); //1.编译原理
+      //2.响应式原理 依赖收集
+      //3.组件化开发（贯穿了vue的流程）
+      //4.diff算法
     }
 
     function isFunction(val) {
