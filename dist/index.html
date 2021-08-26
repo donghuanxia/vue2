@@ -46,6 +46,16 @@
          //vm.arr.b = 2//vue2无法劫持到不存在的属性，新增不存在的书香不会更新视图
          vm.arr1.push({a:999})
          vm.arr1.a = 200
+
+
+         //1.默认会调用vue._init 方法加用户的参数挂在到$options选项中，vm.$options
+         //2.vue会根据用户的参数进行数据的初始化，porps，computed watch ,会获取到对象作为数据，可以通过vm._data访问到用户的数据
+         //3.对数据进行观测 对象（递归使用的defineProperty）、数组（方法的重写） 劫持到用户的操作，比如用户修改了数据-> 更新视图(性能问题)
+         //4.将数据代理到vm对象上， vm.xx => vm._data.xxx
+         //5.判断用户是否传入了el属性，内部会调用$mount方法，此方法也可以用户自己调用
+         //6.对模板的优先级处理 render/template/outerHTML
+         //7.将模板编译成函数 parseHTML 模板解析-》 ast语法树，解析语法树生成code(codegen)->render函数
+         //8.通过render方法 生成虚拟dom+真实的数据=》真实的dom
      </script>
  </body>
  </html>

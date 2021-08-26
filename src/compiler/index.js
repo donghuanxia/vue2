@@ -6,9 +6,10 @@ export function compileToFunction(template){
     let ast = parserHTML(template)
     //代码优化，标记静态节点
     //2.代码生成
-    let code = generate(ast)
+    let code = generate(ast)// 模板引擎的实现原理，都是new Function + with    
     let render = new Function(`with(this){return ${code}}`)
     console.log(render.toString())
+    return render
     //1.编译原理
     //2.响应式原理 依赖收集
     //3.组件化开发（贯穿了vue的流程）
